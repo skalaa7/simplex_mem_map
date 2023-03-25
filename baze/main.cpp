@@ -3,15 +3,15 @@
 #include <cmath>
 #include <omp.h>
 using namespace std;
-#define NUM 10000
+#define NUM 5000
 #define SEED 3
 
 int main(int argc, char *argv[])
 {
-    ofstream MyFile("baza10000.txt");
-    int tc=strtol(argv[1],NULL,10);
+    ofstream MyFile("baza5000.txt");
+    //int tc=strtol(argv[1],NULL,10);
     srand(SEED);
-    #pragma omp parallel for num_threads(tc)
+    //#pragma omp parallel for num_threads(tc)
     for(int i=0;i<NUM;i++)
     {
         for(int j=0;j<NUM;j++)

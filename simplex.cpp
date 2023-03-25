@@ -5,7 +5,7 @@
 #include <CL/cl.hpp>
 #include <iostream>
 #include <fstream>
-#define NUM 5000
+#define NUM 1600
 #define NUMOFVAR NUM
 #define NUMOFSLACK NUM
 #define ROWSIZE (NUMOFSLACK+1)
@@ -20,6 +20,8 @@ double start, elapsed1,elapsed2;
 void print_status_msg(const matrix::mat&, const matrix::mat&, const matrix::mat&, const matrix::mat&, double);
 float wv[ROWSIZE*COLSIZE];
 float * m_wv;
+float * m_newRow;
+float * m_pivotColVal;
 void print(float wv[ROWSIZE*COLSIZE])
 {
     for(int j=0;j<ROWSIZE;j++)
@@ -60,7 +62,7 @@ void makeMatrix(float wv[ROWSIZE*COLSIZE])
 		}
 	}
 	fstream myFile;
-    myFile.open("./baze/baza5000.txt",ios::in); //open in read mode
+    myFile.open("./baze/baza1600.txt",ios::in); //open in read mode
 	if(myFile.is_open())
     {
         for(int j = 0; j < ROWSIZE; j++)
@@ -300,7 +302,8 @@ int main(int argc, char *argv[])
 	
 	 
 	m_wv=(float *)queue.enqueueMapBuffer(b_wv,CL_TRUE,CL_MAP_WRITE,0,BUFFSIZE);
-
+	m_newRow = (float *)queue.enqueueMapBuffer(b_newRow,CL_TRUE,CL_MAP_WRITE,0,COLSIZE);
+	m_pivotColVal = (float *)queue.enqueueMapBuffer(b_pivotColVal,CL_TRUE,CL_MAP_WRITE,0,ROWSIZE);
 	  /*
 	   * OpenCL row on work item
 	   */
@@ -360,10 +363,10 @@ int main(int argc, char *argv[])
 	//print(wv);
 	
 	start = omp_get_wtime();
-	queue.enqueueUnmapMemObject(b_wv,m_wv);
+	//queue.enqueueUnmapMemObject(b_wv,m_wv);
 	
-	queue.enqueueWriteBuffer(b_newRow,CL_TRUE,0,sizeof(float) * COLSIZE,newRow);
-	queue.enqueueWriteBuffer(b_pivotColVal,CL_TRUE,0,sizeof(float) * ROWSIZE,pivotColVal);
+	//queue.enqueueWriteBuffer(b_newRow,CL_TRUE,0,sizeof(float) * COLSIZE,newRow);
+	//queue.enqueueWriteBuffer(b_pivotColVal,CL_TRUE,0,sizeof(float) * ROWSIZE,pivotColVal);
 	//queue.enqueueWriteBuffer(b_wv,CL_TRUE,0,sizeof(float) * ROWSIZE*COLSIZE,wv);
 	
 	pivoting(cl::EnqueueArgs(queue, cl::NDRange(ROWSIZE)),
@@ -383,7 +386,7 @@ int main(int argc, char *argv[])
 	
 	//cl::copy(queue, b_wv, m_wv, m_wv+(ROWSIZE-1)*COLSIZE+(COLSIZE));
 	elapsed2  = omp_get_wtime() - start;
-	m_wv=(float *)queue.enqueueMapBuffer(b_wv,CL_TRUE,CL_MAP_WRITE,0,BUFFSIZE);
+	//m_wv=(float *)queue.enqueueMapBuffer(b_wv,CL_TRUE,CL_MAP_WRITE,0,BUFFSIZE);
 	//print(wv);
 	//while(1);
     }
