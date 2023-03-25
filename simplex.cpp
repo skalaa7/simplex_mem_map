@@ -5,12 +5,12 @@
 #include <CL/cl.hpp>
 #include <iostream>
 #include <fstream>
-#define NUM 1600
+#define NUM 500
 #define NUMOFVAR NUM
 #define NUMOFSLACK NUM
 #define ROWSIZE (NUMOFSLACK+1)
 #define COLSIZE (NUMOFSLACK+NUMOFVAR+1)
-#define FOR_PERIOD 1
+#define FOR_PERIOD 2
 #define BUFFSIZE (ROWSIZE*COLSIZE)
 using namespace std;
 float var[2*NUMOFVAR];
@@ -62,7 +62,7 @@ void makeMatrix(float wv[ROWSIZE*COLSIZE])
 		}
 	}
 	fstream myFile;
-    myFile.open("./baze/baza1600.txt",ios::in); //open in read mode
+    myFile.open("./baze/baza500.txt",ios::in); //open in read mode
 	if(myFile.is_open())
     {
         for(int j = 0; j < ROWSIZE; j++)
@@ -168,21 +168,21 @@ void solutions(float wv[ROWSIZE*COLSIZE],int a)
 }
 void doPivoting(float wv[ROWSIZE*COLSIZE],int pivotRow,int pivotCol,float pivot)
 {
+
     float newRow[COLSIZE];
     float pivotColVal[ROWSIZE];
-    //ds=omp_get_wtime();
+    
     for(int i=0;i<COLSIZE;i++)
         {
             newRow[i]=wv[pivotRow*COLSIZE+i]/pivot;
         }
-	//sdiv=sdiv+omp_get_wtime()-ds;
+	
         for(int j=0;j<ROWSIZE;j++)
         {
             pivotColVal[j]=wv[j*COLSIZE+pivotCol];
         }
-	//dds=omp_get_wtime();
-	//#pragma omp parallel for num_threads(tc) schedule(runtime)
-	start = omp_get_wtime();
+	start=omp_get_wtime();
+	
         for(int j=0;j<ROWSIZE;j++)
         {
             if(j==pivotRow)
@@ -200,12 +200,12 @@ void doPivoting(float wv[ROWSIZE*COLSIZE],int pivotRow,int pivotCol,float pivot)
                 }
             }
         }
-        elapsed1  += omp_get_wtime() - start;
-       //spivot=spivot+omp_get_wtime()-dds;
+        
+       elapsed1+=omp_get_wtime()-start;
 }
 void simplexCalculate(float wv[ROWSIZE*COLSIZE])
 {
-
+	
     //float minnegval;
     //float minpozval;
     //int loc;
@@ -216,9 +216,10 @@ void simplexCalculate(float wv[ROWSIZE*COLSIZE])
 
     //float solVar[NUMOFVAR];
 
-   // while(!checkOptimality(wv))
-    for(int i =0;i<FOR_PERIOD;i++)
+   while(!checkOptimality(wv))
+    //for(int i =0;i<FOR_PERIOD;i++)
     {
+    
     	count[0]++;
         pivotCol=findPivotCol(wv);
 
@@ -237,7 +238,7 @@ void simplexCalculate(float wv[ROWSIZE*COLSIZE])
         doPivoting(wv,pivotRow,pivotCol,pivot);
        // print(wv);
 
-
+	
     }
     //Writing results
     if(unbounded)
@@ -251,6 +252,7 @@ void simplexCalculate(float wv[ROWSIZE*COLSIZE])
         solutions(wv,0);
 
     }
+    
 }
 int main(int argc, char *argv[])
 {
@@ -283,12 +285,12 @@ int main(int argc, char *argv[])
 	  cout << "-- Sequential - host CPU                                  --" << endl;
 	  cout << "------------------------------------------------------------" << endl;
 
-	  //start = omp_get_wtime();
+	 
 
 	  makeMatrix(wv);
 	  //print(wv);
 	  simplexCalculate(wv);
-	  //elapsed1  = omp_get_wtime() - start;
+	 
 	  cout<<"Time elapsed = "<<elapsed1<<endl;
 	  
 
@@ -302,8 +304,8 @@ int main(int argc, char *argv[])
 	
 	 
 	m_wv=(float *)queue.enqueueMapBuffer(b_wv,CL_TRUE,CL_MAP_WRITE,0,BUFFSIZE);
-	m_newRow = (float *)queue.enqueueMapBuffer(b_newRow,CL_TRUE,CL_MAP_WRITE,0,COLSIZE);
-	m_pivotColVal = (float *)queue.enqueueMapBuffer(b_pivotColVal,CL_TRUE,CL_MAP_WRITE,0,ROWSIZE);
+	//m_newRow = (float *)queue.enqueueMapBuffer(b_newRow,CL_TRUE,CL_MAP_WRITE,0,COLSIZE);
+	//m_pivotColVal = (float *)queue.enqueueMapBuffer(b_pivotColVal,CL_TRUE,CL_MAP_WRITE,0,ROWSIZE);
 	  /*
 	   * OpenCL row on work item
 	   */
@@ -317,7 +319,7 @@ int main(int argc, char *argv[])
 
 	  //c.zero();
 
-	 //start = omp_get_wtime();
+	 
 	 makeMatrix(m_wv);
 	//  mul1(cl::EnqueueArgs(queue, cl::NDRange(c.get_row())),pivot, d1, d2, d_a, d_b, d_c);
 
@@ -329,9 +331,10 @@ int main(int argc, char *argv[])
 
     //float solVar[NUMOFVAR];
 
-    //while(!checkOptimality(m_wv))
-    for(int i =0;i<FOR_PERIOD;i++)
+    while(!checkOptimality(m_wv))
+    //for(int i =0;i<FOR_PERIOD;i++)
     {
+    
     	count[1]++;
         pivotCol=findPivotCol(m_wv);
 
@@ -362,17 +365,17 @@ int main(int argc, char *argv[])
 	////gpu part
 	//print(wv);
 	
-	start = omp_get_wtime();
+	start=omp_get_wtime();
 	//queue.enqueueUnmapMemObject(b_wv,m_wv);
 	
-	//queue.enqueueWriteBuffer(b_newRow,CL_TRUE,0,sizeof(float) * COLSIZE,newRow);
-	//queue.enqueueWriteBuffer(b_pivotColVal,CL_TRUE,0,sizeof(float) * ROWSIZE,pivotColVal);
+	queue.enqueueWriteBuffer(b_newRow,CL_TRUE,0,sizeof(float) * COLSIZE,newRow);
+	queue.enqueueWriteBuffer(b_pivotColVal,CL_TRUE,0,sizeof(float) * ROWSIZE,pivotColVal);
 	//queue.enqueueWriteBuffer(b_wv,CL_TRUE,0,sizeof(float) * ROWSIZE*COLSIZE,wv);
 	
 	pivoting(cl::EnqueueArgs(queue, cl::NDRange(ROWSIZE)),
 	   	   pivotRow, ROWSIZE, COLSIZE, b_newRow, b_pivotColVal, b_wv);
 	
-	queue.finish();
+	//
 	//queue.enqueueReadBuffer(b_wv,CL_TRUE,0,sizeof(float) * ROWSIZE*COLSIZE,wv); sporije
 	//m_wv=(float *)queue.enqueueMapBuffer(b_wv,CL_TRUE,CL_MAP_READ,0,BUFFSIZE);
 	
@@ -385,10 +388,12 @@ int main(int argc, char *argv[])
 	//queue.enqueueUnmapMemObject(b_wv,m_wv);
 	
 	//cl::copy(queue, b_wv, m_wv, m_wv+(ROWSIZE-1)*COLSIZE+(COLSIZE));
-	elapsed2  = omp_get_wtime() - start;
+	
 	//m_wv=(float *)queue.enqueueMapBuffer(b_wv,CL_TRUE,CL_MAP_WRITE,0,BUFFSIZE);
 	//print(wv);
 	//while(1);
+	queue.finish();
+	elapsed2+=omp_get_wtime()-start;
     }
     
     //Write results
@@ -400,10 +405,10 @@ int main(int argc, char *argv[])
     {
         //print(wv);
 
-        solutions(wv,1);
+        solutions(m_wv,1);
 
     }
-	//elapsed2  = omp_get_wtime() - start;
+	
 	cout << "------------------------------------------------------------" << endl;
 	cout << "-- Results                                                --" << endl;
 	cout << "------------------------------------------------------------" << endl;
